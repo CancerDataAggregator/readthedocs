@@ -40,11 +40,15 @@ displays all of the fields that can be queried using the ``Q`` or ``query`` (e.g
  'identifier',
  'identifier.system',
  'identifier.value',
+ 'species',
  'sex',
  'race',
  'ethnicity',
  'days_to_birth',
  'subject_associated_project',
+ 'vital_status',
+ 'age_at_death',
+ 'cause_of_death',
  'File',
  'File.id',
  'File.identifier',
@@ -58,14 +62,17 @@ displays all of the fields that can be queried using the ``Q`` or ``query`` (e.g
  'File.drs_uri',
  'File.byte_size',
  'File.checksum',
+ 'File.data_modality',
+ 'File.imaging_modality',
+ 'File.dbgap_accession_number',
  'ResearchSubject',
  'ResearchSubject.id',
  'ResearchSubject.identifier',
  'ResearchSubject.identifier.system',
  'ResearchSubject.identifier.value',
- 'ResearchSubject.associated_project',
- 'ResearchSubject.primary_disease_type',
- 'ResearchSubject.primary_disease_site',
+ 'ResearchSubject.member_of_research_project',
+ 'ResearchSubject.primary_diagnosis_condition',
+ 'ResearchSubject.primary_diagnosis_site',
  'ResearchSubject.Diagnosis',
  'ResearchSubject.Diagnosis.id',
  'ResearchSubject.Diagnosis.identifier',
@@ -76,6 +83,7 @@ displays all of the fields that can be queried using the ``Q`` or ``query`` (e.g
  'ResearchSubject.Diagnosis.morphology',
  'ResearchSubject.Diagnosis.stage',
  'ResearchSubject.Diagnosis.grade',
+ 'ResearchSubject.Diagnosis.method_of_diagnosis',
  'ResearchSubject.Diagnosis.Treatment',
  'ResearchSubject.Diagnosis.Treatment.id',
  'ResearchSubject.Diagnosis.Treatment.identifier',
@@ -84,7 +92,12 @@ displays all of the fields that can be queried using the ``Q`` or ``query`` (e.g
  'ResearchSubject.Diagnosis.Treatment.treatment_type',
  'ResearchSubject.Diagnosis.Treatment.treatment_outcome',
  'ResearchSubject.Diagnosis.Treatment.days_to_treatment_start',
- 'ResearchSubject.Diagnosis.Treatment.days_treatment_end',
+ 'ResearchSubject.Diagnosis.Treatment.days_to_treatment_end',
+ 'ResearchSubject.Diagnosis.Treatment.therapeutic_agent',
+ 'ResearchSubject.Diagnosis.Treatment.treatment_anatomic_site',
+ 'ResearchSubject.Diagnosis.Treatment.treatment_effect',
+ 'ResearchSubject.Diagnosis.Treatment.treatment_end_reason',
+ 'ResearchSubject.Diagnosis.Treatment.number_of_cycles',
  'ResearchSubject.File',
  'ResearchSubject.File.id',
  'ResearchSubject.File.identifier',
@@ -98,6 +111,9 @@ displays all of the fields that can be queried using the ``Q`` or ``query`` (e.g
  'ResearchSubject.File.drs_uri',
  'ResearchSubject.File.byte_size',
  'ResearchSubject.File.checksum',
+ 'ResearchSubject.File.data_modality',
+ 'ResearchSubject.File.imaging_modality',
+ 'ResearchSubject.File.dbgap_accession_number',
  'ResearchSubject.Specimen',
  'ResearchSubject.Specimen.id',
  'ResearchSubject.Specimen.identifier',
@@ -119,16 +135,12 @@ displays all of the fields that can be queried using the ``Q`` or ``query`` (e.g
  'ResearchSubject.Specimen.File.label',
  'ResearchSubject.Specimen.File.data_category',
  'ResearchSubject.Specimen.File.data_type',
- 'ResearchSubject.Specimen.File.file_format',
- 'ResearchSubject.Specimen.File.associated_project',
- 'ResearchSubject.Specimen.File.drs_uri',
- 'ResearchSubject.Specimen.File.byte_size',
- 'ResearchSubject.Specimen.File.checksum']
+ 'ResearchSubject.Specimen.File.file_format']
  
 
-All of the above fields are what describes the highest entity in the data structure hierarchy – ``Subject`` entity. The first five fields represent ``Subject`` demographic information, while the ``ResearchSubject`` entity contains details that we are used to seeing within the nodes' ``Case`` record.
+All of the above fields are what describes the highest entity in the data structure hierarchy – ``Subject`` entity. The first thirteen fields represent ``Subject`` demographic information, while the ``ResearchSubject`` entity contains details that we are used to seeing within the nodes' ``Case`` record.
 
-One of the contributions of the CDA is aggregated ``ResearchSubject`` information. This means that all ``ResearchSubject`` records coming from the same subject are now gathered under the Subject entity. As we know, certain specimens are studied in multiple projects (being part of a single data node or multiple nodes) as different ``ResearchSubject`` entries. Those ``ResearchSubject`` entries are collected as a list under the ``ResearchSubject`` entity. One example of this is the subject record with ``id = TCGA-E2-A10A`` which contains two ``ResearchSubject`` entries, one from GDC and the other from PDC.
+One of the contributions of the CDA is aggregated ``ResearchSubject`` information. This means that all ``ResearchSubject`` records coming from the same subject are now gathered under the Subject entity. As we know, certain specimens are studied in multiple projects (being part of a single data node or multiple nodes) as different ``ResearchSubject`` entries. Those ``ResearchSubject`` entries are collected as a list under the ``ResearchSubject`` entity. One example of this is the patient record with ``id = TCGA-13-1409`` which contains two ``ResearchSubject`` entries, one from GDC and the other from PDC, and three ``Subject`` entries, and additional entry for IDC.
 
 .. note::
 
@@ -162,7 +174,7 @@ displays all non-numeric values that can be searched in a query for a given colu
 
 For each searchable field there are set values that can be searched (excluding numeric), to determine these values the ``unique_terms()`` command is used. For example if we were interested in searchable disease types at the ResearchSubject level were would type the following:
 
->>> unique_terms("ResearchSubject.primary_disease_type")
+>>> unique_terms("ResearchSubject.primary_diagnosis_condition")
 [None,
  'Acinar Cell Neoplasms',
  'Adenomas and Adenocarcinomas',
@@ -182,18 +194,18 @@ For each searchable field there are set values that can be searched (excluding n
 Additionally, you can specify a particular data node by using the ``system`` argument. For more information on data nodes/data commons see :ref:`ETL`.
 
 >>> unique_terms("ResearchSubject.Specimen.source_material_type", system="PDC")
-['Solid Tissue Normal',
- 'Primary Tumor',
- 'Tumor',
+['Cell Lines',
  'Normal',
- 'Not Reported',
- 'Xenograft Tissue',
- 'Cell Lines',
  'Normal Adjacent Tissue',
- 'Xenograft']
+ 'Not Reported',
+ 'Primary Tumor',
+ 'Solid Tissue Normal',
+ 'Tumor',
+ 'Xenograft Tissue']
 
 .. warning::
-  Some columns are array value and do not have ``unique_terms``. Arrays columns contain multiple values; an example of this would be ``File.identifier`` which as  comprised of ``system`` (which data common the information is from) and ``value`` (the id for a given file). Below is the list of column values that do have ``unique_terms``.
+ Some columns are array value or have complex values, and do not have ``unique_terms``. Arrays columns contain multiple values; an example of this would be ``File.identifier`` which as  comprised of ``system`` (which data common the information is from) and ``value`` (the id for a given file). Below is the list of column values that do have ``unique_terms``.
+
   
  - 'File',
  - 'File.identifier',
@@ -227,21 +239,24 @@ Q lang is Language used to send query to the cda service
     
 ``Q().run``
 
-run(offset = 0, limit = 100, version = 'all_v1', host = None, dry_run = False, table = 'gdc-bq-sample.integration', async_call = False)
+run(offset = 0, limit = 100, version = 'all_v2_1', host = None, dry_run = False, table = 'gdc-bq-sample.integration', async_call = False)
 
 **Parameters:**
-    - async_call : bool
-        - async_call allows for queries to run async
-    - table : str
-        - table allows you to select with BigQuery table is being searched; default = ‘integration’
-    - offset : int [optional] 
-        - [description]. Defaults to 0.
-    - limit : int, optional):
-        - limit allows you to set the number of values that returns per page; default = 100
-    - host : URL, [optional]
-        - host allows you to change the server in which you queries run; default = None (Board Institute)
-    - dry_run : bool, [optional] 
-        - [description]. Defaults to False.
+  - async_call : bool
+    - async_call allows for 
+  - table : str
+    - table allows you to select which BigQuery table is being searched; default = ‘gdc-bq-sample.integration’
+  - version : str
+    - version allows you to select which version of the BigQuery table is being searched; default = ‘all_v2_1’
+  - offset : int [optional] 
+    - [description]. Defaults to 0.
+  - limit : int, optional):
+    - limit allows you to set the number of values that returns per page; default = 100
+  - host : URL, [optional]
+    - host allows you to change the server in which you queries run; default = None (Board Institute)
+  - dry_run : bool, [optional] 
+    - [description]. Defaults to False.
+
 **Returns:**
     cda python Q data type
     
@@ -280,15 +295,15 @@ additionally, more complex SQL can be used with the `Q.sql()`_ command.
 
 Now, let's dive into the querying!
 
-We can start by getting the record for ``id = TCGA-E2-A10A`` that we mentioned earlier:
+We can start by getting the record for ``id = TCGA-13-1409`` that we mentioned earlier:
 
->>> q = Q('id = "TCGA-E2-A10A"') # note the double quotes for the string value
+>>> q = Q('id = "TCGA-13-1409"') # note the double quotes for the string value
 >>> r = q.run()
 >>> print(r)
 Getting results from database
 Total execution time: 1304 ms
 QueryID: 243b307b-776b-4427-a8b3-eacb9a87b8d6
-Query: SELECT v3.* FROM gdc-bq-sample.cda_mvp.v3 AS v3 WHERE (v3.id = 'TCGA-E2-A10A')
+Query: SELECT all_v2_1.* FROM gdc-bq-sample.integration.all_v2_1 AS all_v2_1 WHERE (all_v2_1.id = 'TCGA-13-1409')
 Offset: 0
 Count: 1
 Total Row Count: 1
@@ -300,112 +315,152 @@ Let's take a look at the results:
 
 
 >>> r[0]
-{'days_to_birth': '-15085',
- 'race': 'white',
+{'id': 'TCGA-13-1409',
+ 'identifier': [{'system': 'GDC', 'value': 'TCGA-13-1409'},
+  {'system': 'PDC', 'value': 'TCGA-13-1409'},
+  {'system': 'IDC', 'value': 'TCGA-13-1409'}],
+ 'species': 'Homo sapiens',
  'sex': 'female',
+ 'race': 'white',
  'ethnicity': 'not hispanic or latino',
- 'id': 'TCGA-E2-A10A',
- 'ResearchSubject': [{'Diagnosis': [{'morphology': '8500/3',
-     'tumor_stage': 'stage iib',
-     'tumor_grade': 'not reported',
-     'Treatment': [{'type': 'Pharmaceutical Therapy, NOS', 'outcome': None},
-      {'type': 'Radiation Therapy, NOS', 'outcome': None}],
-     'id': 'a84accf0-2294-550d-9825-22625f09f989',
-     'primary_diagnosis': 'Infiltrating duct carcinoma, NOS',
-     'age_at_diagnosis': '15085'}],
-   'Specimen': [{'File': [{'label': 'TCGA-E2-A10A-01Z-00-DX1.98B19EF1-0DAE-4DC6-8B0E-963CFABC6724.svs',
-       'associated_project': ['TCGA-BRCA'],
-       'drs_uri': 'drs://dg.4DFC:99a00a9f-c4bf-49ca-9c3d-435f0a207644',
+ 'days_to_birth': '-26836',
+ 'subject_associated_project': ['TCGA-OV',
+  'CPTAC-TCGA',
+  'CPTAC-TCGA',
+  'tcga_ov'],
+ 'vital_status': 'Dead',
+ 'age_at_death': '1742',
+ 'cause_of_death': None,
+ 'File': [{'id': '6850305a-e067-49fa-b617-0a4f32928352',
+   'identifier': [{'system': 'GDC',
+     'value': '6850305a-e067-49fa-b617-0a4f32928352'}],
+   'label': '6850305a-e067-49fa-b617-0a4f32928352.vep.vcf.gz',
+   'data_category': 'Simple Nucleotide Variation',
+   'data_type': 'Annotated Somatic Mutation',
+   'file_format': 'VCF',
+   'associated_project': 'TCGA-OV',
+   'drs_uri': 'drs://dg.4DFC:6850305a-e067-49fa-b617-0a4f32928352',
+   'byte_size': '142504',
+   'checksum': '0905d8fe02dd007065629983be81dd72',
+   'data_modality': 'Genomic',
+   'imaging_modality': None,
+   'dbgap_accession_number': None},
+  {'id': '14a0766c-6ca4-47bb-ac70-62133c30c1c5',
+   'identifier': [{'system': 'GDC',
+     'value': '14a0766c-6ca4-47bb-ac70-62133c30c1c5'}],
+   'label': 'OV.focal_score_by_genes.txt',
+   'data_category': 'Copy Number Variation',
+   'data_type': 'Gene Level Copy Number Scores',
+   'file_format': 'TXT',
+   'associated_project': 'TCGA-OV',
+   'drs_uri': 'drs://dg.4DFC:14a0766c-6ca4-47bb-ac70-62133c30c1c5',
+   'byte_size': '26280573',
+   'checksum': '22e40a89cdeebbc162896f1cdfe7e55e',
+   'data_modality': 'Genomic',
+   'imaging_modality': None,
+   'dbgap_accession_number': None},
+  {'id': '2e6f24c1-f5a3-4da4-83bf-457436d4927e',
+   'identifier': [{'system': 'GDC',
+     'value': '2e6f24c1-f5a3-4da4-83bf-457436d4927e'}],
+   'label': '2e6f24c1-f5a3-4da4-83bf-457436d4927e.vcf',
+   'data_category': 'Simple Nucleotide Variation',
+   'data_type': 'Raw Simple Somatic Mutation',
+   'file_format': 'VCF',
+   'associated_project': 'TCGA-OV',
+   'drs_uri': 'drs://dg.4DFC:2e6f24c1-f5a3-4da4-83bf-457436d4927e',
+   'byte_size': '2679669',
+   'checksum': '4ec46657a26fd3bcc27ca8fa856a591a',
+   'data_modality': 'Genomic',
+   'imaging_modality': None,
+   'dbgap_accession_number': None},
+   ...
+   'ResearchSubject': [{'id': '18e0e996-8f23-4f53-94a5-dde38b550863',
+   'identifier': [{'system': 'GDC',
+     'value': '18e0e996-8f23-4f53-94a5-dde38b550863'}],
+   'member_of_research_project': 'TCGA-OV',
+   'primary_diagnosis_condition': 'Cystic, Mucinous and Serous Neoplasms',
+   'primary_diagnosis_site': 'Ovary',
+   'Diagnosis': [{'id': '6b0f33e6-884d-5a93-8335-9f55569790a7',
+     'identifier': [{'system': 'GDC',
+       'value': '6b0f33e6-884d-5a93-8335-9f55569790a7'}],
+     'primary_diagnosis': 'Serous cystadenocarcinoma, NOS',
+     'age_at_diagnosis': '26836',
+     'morphology': '8441/3',
+     'stage': None,
+     'grade': 'not reported',
+     'method_of_diagnosis': None,
+     'Treatment': [{'id': '1140ff80-4d83-58f4-b151-0737143a0984',
        'identifier': [{'system': 'GDC',
-         'value': '99a00a9f-c4bf-49ca-9c3d-435f0a207644'}],
-       'data_category': 'Biospecimen',
-       'byte_size': '1341476123',
-       'type': None,
-       'file_format': None,
-       'checksum': 'ca82c81a4e33e89ee50f69855053b001',
-       'id': '99a00a9f-c4bf-49ca-9c3d-435f0a207644',
-       'data_type': 'Slide Image'}],
-     'derived_from_specimen': 'Initial sample',
-     'associated_project': 'TCGA-BRCA',
-     'age_at_collection': None,
+         'value': '1140ff80-4d83-58f4-b151-0737143a0984'}],
+       'treatment_type': 'Pharmaceutical Therapy, NOS',
+       'treatment_outcome': None,
+       'days_to_treatment_start': None,
+       'days_to_treatment_end': None,
+       'therapeutic_agent': None,
+       'treatment_anatomic_site': None,
+       'treatment_effect': None,
+       'treatment_end_reason': None,
+       'number_of_cycles': None},
+      {'id': 'c9c78335-6d3f-52a5-92a9-c41ccbd8d4d8',
+       'identifier': [{'system': 'GDC',
+         'value': 'c9c78335-6d3f-52a5-92a9-c41ccbd8d4d8'}],
+       'treatment_type': 'Radiation Therapy, NOS',
+       'treatment_outcome': None,
+       'days_to_treatment_start': None,
+       'days_to_treatment_end': None,
+       'therapeutic_agent': None,
+       'treatment_anatomic_site': None,
+       'treatment_effect': None,
+       'treatment_end_reason': None,
+       'number_of_cycles': None}]}],
+   'File': [{'id': '6850305a-e067-49fa-b617-0a4f32928352',
+     'identifier': [{'system': 'GDC',
+       'value': '6850305a-e067-49fa-b617-0a4f32928352'}],
+     'label': '6850305a-e067-49fa-b617-0a4f32928352.vep.vcf.gz',
+     'data_category': 'Simple Nucleotide Variation',
+     'data_type': 'Annotated Somatic Mutation',
+     'file_format': 'VCF',
+     'associated_project': 'TCGA-OV',
+     'drs_uri': 'drs://dg.4DFC:6850305a-e067-49fa-b617-0a4f32928352',
+     'byte_size': '142504',
+     'checksum': '0905d8fe02dd007065629983be81dd72',
+     'data_modality': 'Genomic',
+     'imaging_modality': None,
+     'dbgap_accession_number': None},
+     ...
+     'Specimen': [{'id': '930c3552-f960-4a57-aa35-b504807a9676',
+     'identifier': [{'system': 'GDC',
+       'value': '930c3552-f960-4a57-aa35-b504807a9676'}],
+     'associated_project': 'TCGA-OV',
+     'age_at_collection': '-26836',
+     'primary_disease_type': 'Cystic, Mucinous and Serous Neoplasms',
      'anatomical_site': None,
      'source_material_type': 'Primary Tumor',
-     'derived_from_subject': 'TCGA-E2-A10A',
      'specimen_type': 'sample',
-     'id': 'd2900212-b6bd-423a-9968-6b35df0e98aa',
-     'primary_disease_type': 'Ductal and Lobular Neoplasms',
-     'identifier': [{'system': 'GDC',
-       'value': 'd2900212-b6bd-423a-9968-6b35df0e98aa'}]},
-    {'File': [{'label': '0012f466-075a-4d47-b1d7-e8e63e8b9c99.vep.vcf.gz',
-       'associated_project': ['TCGA-BRCA'],
-       'drs_uri': 'drs://dg.4DFC:0012f466-075a-4d47-b1d7-e8e63e8b9c99',
+     'derived_from_specimen': 'initial specimen',
+     'derived_from_subject': 'TCGA-13-1409',
+     'File': [{'id': '04da990e-67a3-4ead-ab08-448c7118624c',
        'identifier': [{'system': 'GDC',
-         'value': '0012f466-075a-4d47-b1d7-e8e63e8b9c99'}],
+         'value': '04da990e-67a3-4ead-ab08-448c7118624c'}],
+       'label': 'TCGA.OV.varscan.04da990e-67a3-4ead-ab08-448c7118624c.DR-10.0.protected.maf.gz',
        'data_category': 'Simple Nucleotide Variation',
-       'byte_size': '927367',
-       'type': None,
-       'file_format': None,
-       'checksum': '82fa7202b77fd1f95c8cea7dd7e12ab2',
-       'id': '0012f466-075a-4d47-b1d7-e8e63e8b9c99',
-       'data_type': 'Annotated Somatic Mutation'},
-      {'label': 'TCGA.BRCA.mutect.053f01ed-3154-4aea-9e7f-932c435034b3.DR-10.0.protected.maf.gz',
-       'associated_project': ['TCGA-BRCA'],
-       'drs_uri': 'drs://dg.4DFC:053f01ed-3154-4aea-9e7f-932c435034b3',
-       'identifier': [{'system': 'GDC',
-         'value': '053f01ed-3154-4aea-9e7f-932c435034b3'}],
-       'data_category': 'Simple Nucleotide Variation',
-       'byte_size': '1882061658',
-       'type': None,
-       'file_format': None,
-       'checksum': 'ae12bbce7abcc03eff228935fa8d3d22',
-       'id': '053f01ed-3154-4aea-9e7f-932c435034b3',
-       'data_type': 'Aggregated Somatic Mutation'},
-      ...
-  {'Diagnosis': [{'morphology': '8500/3',
-     'tumor_stage': 'Stage IIB',
-     'tumor_grade': 'Not Reported',
-     'Treatment': [],
-     'id': 'ff312994-70ca-11e8-bcf1-0a2705229b82',
-     'primary_diagnosis': 'Infiltrating duct carcinoma, NOS',
-     'age_at_diagnosis': '15085'}],
-   'Specimen': [{'File': [{'label': 'TCGA_E2-A10A_BH-A18Q_C8-A130_117C_W_BI_20130222_H-PM_f02.mzML.gz',
-       'associated_project': ['CPTAC-TCGA'],
-       'drs_uri': 'drs://dg.4DFC:00974c40-6abd-11e9-884a-005056921935',
-       'identifier': [{'system': 'PDC',
-         'value': '00974c40-6abd-11e9-884a-005056921935'}],
-       'data_category': 'Processed Mass Spectra',
-       'byte_size': '162469862',
-       'type': None,
-       'file_format': 'mzML',
-       'checksum': '3016d34ed65209ddd36a2ac1216dbd9e',
-       'id': '00974c40-6abd-11e9-884a-005056921935',
-       'data_type': 'Open Standard'},
-      {'label': 'TCGA_E2-A10A_BH-A18Q_C8-A130_117C_W_BI_20130222_H-PM_f03.mzML.gz',
-       'associated_project': ['CPTAC-TCGA'],
-       'drs_uri': 'drs://dg.4DFC:01fc9b08-6abd-11e9-884a-005056921935',
-       'identifier': [{'system': 'PDC',
-         'value': '01fc9b08-6abd-11e9-884a-005056921935'}],
-       'data_category': 'Processed Mass Spectra',
-       'byte_size': '166687764',
-       'type': None,
-       'file_format': 'mzML',
-       'checksum': '76f5e76138aacb2997f54c6b25fd4d87',
-       'id': '01fc9b08-6abd-11e9-884a-005056921935',
-       'data_type': 'Open Standard'},
-      ...
-   'associated_project': 'CPTAC-TCGA',
-   'id': '010df72d-63d9-11e8-bcf1-0a2705229b82',
-   'primary_disease_type': 'Breast Invasive Carcinoma',
-   'identifier': [{'system': 'PDC',
-     'value': '010df72d-63d9-11e8-bcf1-0a2705229b82'}],
-   'primary_disease_site': 'Breast'}]}
+       'data_type': 'Aggregated Somatic Mutation',
+       'file_format': 'MAF',
+       'associated_project': 'TCGA-OV',
+       'drs_uri': 'drs://dg.4DFC:04da990e-67a3-4ead-ab08-448c7118624c',
+       'byte_size': '216647924',
+       'checksum': '431606691f638bb07d9028e6605539c7',
+       'data_modality': 'Genomic',
+       'imaging_modality': None,
+       'dbgap_accession_number': None},
+       ...
    
-The record is pretty large, so we'll print out identifier values for each ResearchSubject to confirm that we have one ResearchSubject that comes from GDC, and one that comes from PDC:
+The record is pretty large, so we'll print out identifier values for each ``ResearchSubject`` to confirm that we have one ResearchSubject that comes from GDC, and one that comes from PDC:
 
 >>> for research_subject in r[0]['ResearchSubject']:
 >>>     print(research_subject['identifier'])
-[{'system': 'GDC', 'value': '4da7abaf-ac7a-41c0-8033-5780a398545c'}]
-[{'system': 'PDC', 'value': '010df72d-63d9-11e8-bcf1-0a2705229b82'}]
+[{'system': 'GDC', 'value': '18e0e996-8f23-4f53-94a5-dde38b550863'}]
+[{'system': 'PDC', 'value': '3a36a497-63d7-11e8-bcf1-0a2705229b82'}]
 
 The values represent ResearchSubject IDs and are equivalent to case_id values in data commons.
 
@@ -432,7 +487,7 @@ Example Query 1: And
 
  
  >>> q1 = Q('ResearchSubject.Diagnosis.age_at_diagnosis > 50*365')
- >>> q2 = Q('ResearchSubject.associated_project = "TCGA-OV"')
+ >>> q2 = Q('ResearchSubject.member_of_research_project = "TCGA-OV"')
  
  >>> q = q1.And(q2)
  >>> r = q.run()
@@ -444,9 +499,9 @@ Example Query 1: And
  Total execution time: 10550 ms
  
  QueryID: d43dd6bc-cab5-43c0-a683-ff32c5a6f621
- Query: SELECT v3.* FROM gdc-bq-sample.cda_mvp.v3 AS v3, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.Diagnosis) AS _Diagnosis WHERE ((_Diagnosis.age_at_diagnosis > 50*365) AND (_ResearchSubject.associated_project = 'TCGA-OV'))
+ Query: SELECT all_v2_1.* FROM gdc-bq-sample.integration.all_v2_1 AS all_v2_1, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.Diagnosis) AS _Diagnosis WHERE ((_Diagnosis.age_at_diagnosis > 50*365) AND (_ResearchSubject.member_of_research_project = 'TCGA-OV'))
  Offset: 0
- Count: 461
+ Count: 100
  Total Row Count: 461
  More pages: False
 
@@ -470,10 +525,10 @@ Example Query 2: And continued
  Total execution time: 11287 ms
  
  QueryID: 02c118d4-08ac-442f-bc79-71b794bab6bc
- Query: SELECT v3.* FROM gdc-bq-sample.cda_mvp.v3 AS v3, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.Specimen) AS _Specimen, UNNEST(_ResearchSubject.Diagnosis) AS _Diagnosis WHERE ((_Specimen.primary_disease_type = 'Nevi and Melanomas') AND (_Diagnosis.age_at_diagnosis < 30*365))
+ Query: SELECT all_v2_1.* FROM gdc-bq-sample.integration.all_v2_1 AS all_v2_1, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.Specimen) AS _Specimen, UNNEST(_ResearchSubject.Diagnosis) AS _Diagnosis WHERE ((_Specimen.primary_disease_type = 'Nevi and Melanomas') AND (_Diagnosis.age_at_diagnosis < 30*365))
  Offset: 0
- Count: 647
- Total Row Count: 647
+ Count: 100
+ Total Row Count: 663
  More pages: False
 
 
@@ -496,10 +551,10 @@ In addition, we can check how many records come from particular systems by addin
  Total execution time: 9604 ms
  
  QueryID: 2cd1f165-f6f5-49e4-b699-b4df191a540f
- Query: SELECT v3.* FROM gdc-bq-sample.cda_mvp.v3 AS v3, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.Specimen) AS _Specimen, UNNEST(_ResearchSubject.Diagnosis) AS _Diagnosis, UNNEST(_Specimen.identifier) AS _identifier WHERE ((_Specimen.primary_disease_type = 'Nevi and Melanomas') AND ((_Diagnosis.age_at_diagnosis < 30*365) AND (_identifier.system = 'GDC')))
+ Query: SELECT all_v2_1.* FROM gdc-bq-sample.integration.all_v2_1 AS all_v2_1, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.Specimen) AS _Specimen, UNNEST(_ResearchSubject.Diagnosis) AS _Diagnosis, UNNEST(_Specimen.identifier) AS _identifier WHERE ((_Specimen.primary_disease_type = 'Nevi and Melanomas') AND ((_Diagnosis.age_at_diagnosis < 30*365) AND (_identifier.system = 'GDC')))
  Offset: 0
- Count: 647
- Total Row Count: 647
+ Count: 100
+ Total Row Count: 663
  More pages: False
 
 
@@ -514,10 +569,10 @@ To explore the results further, we can fetch the Subject JSON objects by iterati
  >>> for subject in r:
  >>>     research_subjects = subject['ResearchSubject']
  >>>     for rs in research_subjects:
- >>>         projects.add(rs['associated_project'])
+ >>>         projects.add(rs['member_of_research_project'])
  
  >>> print(projects)
- {'FM-AD', 'TCGA-UVM', 'TCGA-SKCM'}
+ {'FM-AD', 'TCGA-SKCM'}
 
 
 The output shows the projects where Nevi and Melanomas cases appear.
@@ -551,28 +606,46 @@ Example Query 3: Or
  Total execution time: 20529 ms
  
  QueryID: 2b325482-f764-4675-aebe-43f7e8d4004a
- Query: SELECT v3.* FROM gdc-bq-sample.cda_mvp.v3 AS v3, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.Specimen) AS _Specimen WHERE (((_Specimen.source_material_type = 'Primary Tumor') AND ((v3.sex = 'female') AND (v3.days_to_birth > -60*365))) AND ((_ResearchSubject.primary_disease_site = 'Ovary') OR (_ResearchSubject.primary_disease_site = 'Breast')))
+ Query: SELECT all_v2_1.* FROM gdc-bq-sample.integration.all_v2_1 AS all_v2_1, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.Specimen) AS _Specimen WHERE (((_Specimen.source_material_type = 'Primary Tumor') AND ((all_v2_1.sex = 'female') AND (all_v2_1.days_to_birth > -60*365))) AND ((_ResearchSubject.primary_diagnosis_site = 'Ovary') OR (_ResearchSubject.primary_diagnosis_site = 'Breast')))
  Offset: 0
- Count: 1000
- Total Row Count: 27284
+ Count: 100
+ Total Row Count: 28040
  More pages: True
 
 
-In this case, we have a result that contains more than 1000 records which is the default page size. To load the next 1000 records, we can use the ``next_page()`` method:
+In this case, we have a result that contains more than 100 records which is the default page size. To load the next 100 records, we can use the ``next_page()`` method:
 
 .. code-block:: python
 
  >>> r2 = r.next_page()
  
  >>> print(r2)
+ 
+ QueryID: 92f1a560-5385-49d9-a477-286c16f7f67c
+        Query: SELECT all_v2_1.* FROM gdc-bq-sample.integration.all_v2_1 AS all_v2_1, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.Specimen) AS _Specimen WHERE (((_Specimen.source_material_type = 'Primary Tumor') AND ((all_v2_1.sex = 'female') AND (all_v2_1.days_to_birth > -60*365))) AND ((_ResearchSubject.primary_diagnosis_site = 'Ovary') OR (_ResearchSubject.primary_diagnosis_site = 'Breast')))
+        Offset: 100
+        Count: 100
+        Total Row Count: 28040
+        More pages: True
 
 
 Alternatively, we can use the ``offset`` argument to specify the record to start from:
 
 .. code-block:: python
+ ...
+ >>> r = q.run(offset=100)
+ >>> print(r)
+ 
+ Getting results from database
 
-  >>> r = q.run(offset=1000)
-  >>> print(r)
+Total execution time: 4278 ms
+
+        QueryID: ee2150d8-11fb-4720-a0b3-0352f2d4a38f
+        Query: SELECT all_v2_1.* FROM gdc-bq-sample.integration.all_v2_1 AS all_v2_1, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.Specimen) AS _Specimen WHERE (((_Specimen.source_material_type = 'Primary Tumor') AND ((all_v2_1.sex = 'female') AND (all_v2_1.days_to_birth > -60*365))) AND ((_ResearchSubject.primary_diagnosis_site = 'Ovary') OR (_ResearchSubject.primary_diagnosis_site = 'Breast')))
+        Offset: 100
+        Count: 100
+        Total Row Count: 28040
+        More pages: True
 
 
 Example Query 4: From
@@ -583,46 +656,47 @@ Example Query 4: From
 .. note::
   **Disease type values denoting the same disease groups can be completely different within different systems. This is where CDA features come into play.** We first start by exploring the values available for this particular field in both systems.
 
->>> unique_terms('ResearchSubject.primary_disease_type', system="GDC",limit=10)
-['Osseous and Chondromatous Neoplasms',
- 'Not Applicable',
- 'Lymphoid Leukemias',
- 'Myeloid Leukemias',
- 'Not Reported',
- 'Cystic, Mucinous and Serous Neoplasms',
+>>> unique_terms('ResearchSubject.primary_diagnosis_condition', system="GDC",limit=10)
+[None,
+ 'Acinar Cell Neoplasms',
  'Adenomas and Adenocarcinomas',
- 'Gliomas',
- 'Ductal and Lobular Neoplasms',
- 'Germ Cell Neoplasms']
+ 'Adnexal and Skin Appendage Neoplasms',
+ 'Basal Cell Neoplasms',
+ 'Blood Vessel Tumors',
+ 'Chronic Myeloproliferative Disorders',
+ 'Complex Epithelial Neoplasms',
+ 'Complex Mixed and Stromal Neoplasms',
+ 'Cystic, Mucinous and Serous Neoplasms']
  
  
-Since “Ovarian Serous Cystadenocarcinoma” doesn’t appear in GDC values we decide to look into the PDC:
+Since “Ovarian Serous Cystadenocarcinoma” doesn’t appear in GDC values let's take a look into the PDC:
 
->>> unique_terms('ResearchSubject.primary_disease_type', system="PDC")
-['Other',
- 'Lung Squamous Cell Carcinoma',
- 'Head and Neck Squamous Cell Carcinoma',
- 'Lung Adenocarcinoma',
- 'Colon Adenocarcinoma',
- 'Rectum Adenocarcinoma',
- 'Clear Cell Renal Cell Carcinoma',
- 'Uterine Corpus Endometrial Carcinoma',
- 'Ovarian Serous Cystadenocarcinoma',
+>>> unique_terms('ResearchSubject.primary_diagnosis_condition', system="PDC")
+['Acute Myeloid Leukemia',
  'Breast Invasive Carcinoma',
- 'Pancreatic Ductal Adenocarcinoma',
- 'Pediatric/AYA Brain Tumors',
- 'Glioblastoma',
- 'Hepatocellular Carcinoma ',
- 'Early Onset Gastric Cancer',
  'Chromophobe Renal Cell Carcinoma',
+ 'Clear Cell Renal Cell Carcinoma',
+ 'Colon Adenocarcinoma',
+ 'Early Onset Gastric Cancer',
+ 'Glioblastoma',
+ 'Head and Neck Squamous Cell Carcinoma',
+ 'Hepatocellular Carcinoma ',
+ 'Lung Adenocarcinoma',
+ 'Lung Squamous Cell Carcinoma',
+ 'Oral Squamous Cell Carcinoma',
+ 'Other',
+ 'Ovarian Serous Cystadenocarcinoma',
+ 'Pancreatic Ductal Adenocarcinoma',
  'Papillary Renal Cell Carcinoma',
- 'Oral Squamous Cell Carcinoma']
+ 'Pediatric/AYA Brain Tumors',
+ 'Rectum Adenocarcinoma',
+ 'Uterine Corpus Endometrial Carcinoma']
  
 After examining the output, we see that it does come from the PDC. Hence, if we could first identify the data that has research subjects found within the PDC that have this particular disease type, and then further narrow down the results to include only the portion of the data that is present in GDC, we could get the records that we are looking for.
 
 .. code-block:: python
 
- >>> q1 = Q('ResearchSubject.primary_disease_type = "Ovarian Serous Cystadenocarcinoma"')
+ >>> q1 = Q('ResearchSubject.primary_diagnosis_condition = "Ovarian Serous Cystadenocarcinoma"')
  >>> q2 = Q('ResearchSubject.identifier.system = "PDC"')
  >>> q3 = Q('ResearchSubject.identifier.system = "GDC"')
  
@@ -631,17 +705,118 @@ After examining the output, we see that it does come from the PDC. Hence, if we 
  
  >>> print(r)
  Getting results from database
- 
- Total execution time: 11682 ms
- 
- QueryID: 9755ed03-e8de-4e26-9ea8-de8a9b3a0c94
- Query: SELECT v3.* FROM (SELECT v3.* FROM gdc-bq-sample.cda_mvp.v3 AS v3, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.identifier) AS _identifier WHERE ((_ResearchSubject.primary_disease_type = 'Ovarian Serous Cystadenocarcinoma') AND (_identifier.system = 'PDC'))) AS v3, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.identifier) AS _identifier WHERE (_identifier.system = 'GDC')
- Offset: 0
- Count: 275
- Total Row Count: 275
- More pages: False
+
+Total execution time: 35006 ms
+
+        QueryID: a2ce5a91-bca5-411e-ad51-b6039ced6d5e
+        Query: SELECT all_v2_1.* FROM (SELECT all_v2_1.* FROM gdc-bq-sample.integration.all_v2_1 AS all_v2_1, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.identifier) AS _identifier WHERE ((_ResearchSubject.primary_diagnosis_condition = 'Ovarian Serous Cystadenocarcinoma') AND (_identifier.system = 'PDC'))) AS all_v2_1, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.identifier) AS _identifier WHERE (_identifier.system = 'GDC')
+        Offset: 0
+        Count: 100
+        Total Row Count: 275
+        More pages: True
 
 As you can see, this is achieved by utilizing ``From`` operator. The ``From`` operator allows us to create queries from results of other queries. This is particularly useful when working with conditions that involve a single field which can take multiple different values for different items in a list that is being part of, e.g. we need ``ResearchSubject.identifier.system`` to be both “PDC” and “GDC” for a single Subject. In such cases, ``And`` operator can’t help because it will return those entries where the field takes both values, which is zero entries.
+
+ >>> r = q1.run()
+ >>> r = q1.run(limit=2)            # Limit to two results per page
+ 
+ >>> r.sql   # Return SQL string used to generate the query e.g.
+ "SELECT all_v2_1.* FROM gdc-bq-sample.integration.all_v2_1 AS all_v2_1, UNNEST(ResearchSubject) AS _ResearchSubject WHERE (_ResearchSubject.primary_diagnosis_condition = 'Ovarian Serous Cystadenocarcinoma')"
+ 
+ >>> print(r) # Prints some brief information about the result page eg:
+ QueryID: 0d080ca0-1298-4da1-8654-593c92fad1f0
+        Query: SELECT all_v2_1.* FROM gdc-bq-sample.integration.all_v2_1 AS all_v2_1, UNNEST(ResearchSubject) AS _ResearchSubject WHERE (_ResearchSubject.primary_diagnosis_condition = 'Ovarian Serous Cystadenocarcinoma')
+        Offset: 0
+        Count: 2
+        Total Row Count: 283
+        More pages: True
+ 
+ >>> r[0] # Returns nth result of this page as a Python dict e.g.
+ {'id': 'TCGA-61-1724',
+ 'identifier': [{'system': 'GDC', 'value': 'TCGA-61-1724'},
+  {'system': 'PDC', 'value': 'TCGA-61-1724'}],
+ 'species': 'Homo sapiens',
+ 'sex': 'female',
+ 'race': 'white',
+ 'ethnicity': 'not hispanic or latino',
+ 'days_to_birth': '-17168',
+ 'subject_associated_project': ['TCGA-OV', 'CPTAC-TCGA', 'CPTAC-TCGA'],
+ 'vital_status': 'Dead',
+ 'age_at_death': '637',
+ 'cause_of_death': None,
+ 'File': [{'id': '14a0766c-6ca4-47bb-ac70-62133c30c1c5',
+   'identifier': [{'system': 'GDC',
+     'value': '14a0766c-6ca4-47bb-ac70-62133c30c1c5'}],
+   'label': 'OV.focal_score_by_genes.txt',
+   'data_category': 'Copy Number Variation',
+   'data_type': 'Gene Level Copy Number Scores',
+   'file_format': 'TXT',
+   'associated_project': 'TCGA-OV',
+   'drs_uri': 'drs://dg.4DFC:14a0766c-6ca4-47bb-ac70-62133c30c1c5',
+   'byte_size': '26280573',
+   'checksum': '22e40a89cdeebbc162896f1cdfe7e55e',
+   'data_modality': 'Genomic',
+   'imaging_modality': None,
+   'dbgap_accession_number': None},
+   ...
+  
+ >>> r.pretty_print(0) # Prints the nth result nicely
+ {
+    "id": "TCGA-61-1724",
+    "identifier": [
+        {
+            "system": "GDC",
+            "value": "TCGA-61-1724"
+        },
+        {
+            "system": "PDC",
+            "value": "TCGA-61-1724"
+        }
+    ],
+    "species": "Homo sapiens",
+    "sex": "female",
+    "race": "white",
+    "ethnicity": "not hispanic or latino",
+    "days_to_birth": "-17168",
+    "subject_associated_project": [
+        "TCGA-OV",
+        "CPTAC-TCGA",
+        "CPTAC-TCGA"
+    ],
+    "vital_status": "Dead",
+    "age_at_death": "637",
+    "cause_of_death": null,
+    "File": [
+        {
+            "id": "14a0766c-6ca4-47bb-ac70-62133c30c1c5",
+            "identifier": [
+                {
+                    "system": "GDC",
+                    "value": "14a0766c-6ca4-47bb-ac70-62133c30c1c5"
+                }
+            ],
+            "label": "OV.focal_score_by_genes.txt",
+            "data_category": "Copy Number Variation",
+            "data_type": "Gene Level Copy Number Scores",
+            "file_format": "TXT",
+            "associated_project": "TCGA-OV",
+            "drs_uri": "drs://dg.4DFC:14a0766c-6ca4-47bb-ac70-62133c30c1c5",
+            "byte_size": "26280573",
+            "checksum": "22e40a89cdeebbc162896f1cdfe7e55e",
+            "data_modality": "Genomic",
+            "imaging_modality": null,
+            "dbgap_accession_number": null
+        },
+    ...
+   
+ >>> r2 = r.next_page()  # Fetches the next page of results
+ >>> print(r2)
+ QueryID: 0d080ca0-1298-4da1-8654-593c92fad1f0
+        Query: SELECT all_v2_1.* FROM gdc-bq-sample.integration.all_v2_1 AS all_v2_1, UNNEST(ResearchSubject) AS _ResearchSubject WHERE (_ResearchSubject.primary_diagnosis_condition = 'Ovarian Serous Cystadenocarcinoma')
+        Offset: 2
+        Count: 2
+        Total Row Count: 283
+        More pages: True
 
 
 Example Query 5: From continued (IDC)
@@ -657,8 +832,8 @@ So now we would like to repeat the previouse query but this time identify cases 
 Oh no! looks like we have an empty set. This is because IDC does not have `ResearchSubject` (or Specimen) intities, only Subject intities (see .. ref:: here `ETL` for more information). So, let try the same code as `Example Query 4: From`_ but change the ``ResearchSubject.identifier.system`` to **IDC** instead of **GDC**. 
 
 .. code-block:: python
+  q1 = Q('ResearchSubject.primary_diagnosis_condition = "Ovarian Serous Cystadenocarcinoma"')
 
-  q1 = Q('ResearchSubject.primary_disease_type = "Ovarian Serous Cystadenocarcinoma"')
   q2 = Q('ResearchSubject.identifier.system = "PDC"')
   q3 = Q('ResearchSubject.identifier.system = "IDC"')
   
@@ -668,22 +843,21 @@ Oh no! looks like we have an empty set. This is because IDC does not have `Resea
   print(r)
   
   Getting results from database
-  
-  Total execution time: 7810 ms
-  
-  QueryID: 664b226e-babc-462b-a826-448b8ab551a7
-  Query: SELECT all_v1.* FROM (SELECT all_v1.* FROM gdc-bq-sample.integration.all_v1 AS all_v1, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.identifier) AS _identifier WHERE ((_ResearchSubject.primary_disease_type = 'Ovarian Serous Cystadenocarcinoma') AND (_identifier.system = 'PDC'))) AS all_v1, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.identifier) AS _identifier WHERE (_identifier.system = 'IDC')
-  Offset: 0
-  Count: 0
-  Total Row Count: 0
-  More pages: False
+
+Total execution time: 8746 ms
+
+        QueryID: fc470d8d-a23d-4711-a79e-101226253108
+        Query: SELECT all_v2_1.* FROM (SELECT all_v2_1.* FROM gdc-bq-sample.integration.all_v2_1 AS all_v2_1, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.identifier) AS _identifier WHERE ((_ResearchSubject.primary_diagnosis_condition = 'Ovarian Serous Cystadenocarcinoma') AND (_identifier.system = 'PDC'))) AS all_v2_1, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.identifier) AS _identifier WHERE (_identifier.system = 'IDC')
+        Offset: 0
+        Count: 0
+        Total Row Count: 0
+        More pages: False
 
 
 Hmm, zero results. Looks like we made a similar mistake and once again included `ResearchSubject`. If we look at the available searchable fields again using ``columns()``, we will see that there is another field named ``identifier.system`` at the Subject level. So, let's try that:
 
 .. code-block:: python
-
-  q1 = Q('ResearchSubject.primary_disease_type = "Ovarian Serous Cystadenocarcinoma"')
+  q1 = Q('ResearchSubject.primary_diagnosis_condition = "Ovarian Serous Cystadenocarcinoma"')
   q2 = Q('ResearchSubject.identifier.system = "PDC"')
   q3 = Q('identifier.system = "IDC"')
   
@@ -693,18 +867,19 @@ Hmm, zero results. Looks like we made a similar mistake and once again included 
   print(r)
   
   Getting results from database
-  
-  Total execution time: 7281 ms
-  
-  QueryID: 2baf2b96-8424-440b-8765-6d44cf098feb
-  Query: SELECT all_v1.* FROM (SELECT all_v1.* FROM gdc-bq-sample.integration.all_v1 AS all_v1, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.identifier) AS _identifier WHERE ((_ResearchSubject.primary_disease_type = 'Ovarian Serous Cystadenocarcinoma') AND (_identifier.system = 'PDC'))) AS all_v1, UNNEST(identifier) AS _identifier WHERE (_identifier.system = 'IDC')
-  Offset: 0
-  Count: 37
-  Total Row Count: 37
-  More pages: False
+
+Total execution time: 17130 ms
+
+        QueryID: 92c68759-8516-4b12-bbcd-4554495f4748
+        Query: SELECT all_v2_1.* FROM (SELECT all_v2_1.* FROM gdc-bq-sample.integration.all_v2_1 AS all_v2_1, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.identifier) AS _identifier WHERE ((_ResearchSubject.primary_diagnosis_condition = 'Ovarian Serous Cystadenocarcinoma') AND (_identifier.system = 'PDC'))) AS all_v2_1, UNNEST(identifier) AS _identifier WHERE (_identifier.system = 'IDC')
+        Offset: 0
+        Count: 37
+        Total Row Count: 37
+        More pages: False
 
 
 After a quick fix we now have 37 cases.
+
 
 Example query 6: Return all data
 ++++
@@ -712,7 +887,6 @@ Example query 6: Return all data
 In some instances you may want to return all of the data to build/process your own database. This can be done by queries for data in any of the Data Commons using the ``identifier.system`` columns and ``OR`` operator.
 
 .. code-block:: python
-
   q = query('identifier.system = "GDC" OR identifier.system = "PDC" OR identifier.system = "IDC"')
   r = q.run()
   r
@@ -901,7 +1075,7 @@ Test query 1
   Total execution time: 27414 ms
   
   QueryID: a8eabfc7-7258-45cb-8570-763ec4d1926c
-  Query: SELECT all_v1.* FROM (SELECT all_v1.* FROM gdc-bq-sample.integration.all_v1 AS all_v1, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.Diagnosis) AS _Diagnosis, UNNEST(_Diagnosis.Treatment) AS _Treatment, UNNEST(_ResearchSubject.identifier) AS _identifier WHERE ((_Treatment.treatment_type = 'Radiation Therapy, NOS') AND (_identifier.system = 'GDC'))) AS all_v1, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.identifier) AS _identifier WHERE (_identifier.system = 'PDC')
+  Query: SELECT all_v1.* FROM (SELECT all_v1.* FROM gdc-bq-sample.integration.all_v2_1 AS all_v2_1, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.Diagnosis) AS _Diagnosis, UNNEST(_Diagnosis.Treatment) AS _Treatment, UNNEST(_ResearchSubject.identifier) AS _identifier WHERE ((_Treatment.treatment_type = 'Radiation Therapy, NOS') AND (_identifier.system = 'GDC'))) AS all_v1, UNNEST(ResearchSubject) AS _ResearchSubject, UNNEST(_ResearchSubject.identifier) AS _identifier WHERE (_identifier.system = 'PDC')
   Offset: 0
   Count: 100
   Total Row Count: 369
@@ -929,7 +1103,7 @@ Test query 2
   Total execution time: 24125 ms
   
   QueryID: a5de2545-2b5e-476c-9e92-b768d058f603
-  Query: SELECT all_v1.* FROM (SELECT all_v1.* FROM gdc-bq-sample.integration.all_v1 AS all_v1, UNNEST(ResearchSubject) AS _ResearchSubject WHERE ((_ResearchSubject.associated_project = 'TCGA-BRCA') AND (all_v1.days_to_birth < -50*365))) AS all_v1, UNNEST(identifier) AS _identifier WHERE (_identifier.system = 'IDC')
+  Query: SELECT all_v1.* FROM (SELECT all_v1.* FROM gdc-bq-sample.integration.all_v2_1 AS all_v2_1, UNNEST(ResearchSubject) AS _ResearchSubject WHERE ((_ResearchSubject.associated_project = 'TCGA-BRCA') AND (all_v1.days_to_birth < -50*365))) AS all_v2_1, UNNEST(identifier) AS _identifier WHERE (_identifier.system = 'IDC')
   Offset: 0
   Count: 88
   Total Row Count: 88

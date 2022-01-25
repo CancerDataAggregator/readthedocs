@@ -17,19 +17,21 @@ print(new_strings)
 ```
 
 Which will produce the following output:
-['GDC extraction date - 09/27/2021', 'GDC data release - v30.0', 'PDC extraction date - 09/27/2021', 'PDC data release - v2.1', 'IDC extraction date - 09/27/2021', 'IDC data release - Version 3.0']
+['GDC extraction date - 12/08/2021', 'GDC data release - v31.0', 'PDC extraction date - 12/08/2021', 'PDC data release - v2.3', 'IDC extraction date - 12/09/2021', 'IDC data release - Version 4.0']
 
-## R2 ETL Achievements
-The achievements for R2 are outlined as follows:
+## R2.1 ETL Achievements
+The achievements for R2.1 are outlined as follows:
 
-* Added IDC data into the CDA data repo
-* Restructured how CDA handles **File** entities
-    * Populate **File** entities for all specimen types instead of only sample types.
-    * Added **File** entities to the **Subject** and **ResearchSubject** entities which list files associated with each.
-* Altered ETL to use a mapping file for transformations in order to more easily support adding additional nodes.
-* Data release information of GDC, PDC, and IDC that has been extracted, transformed, and loaded is available on the BigQuery tables (and queryable!)
+* Adjusted data schema to better reflect CCDH
+    * Added age_at_death, cause_of_death, and vital_status fields to Subject entity
+    * Added method_of_diagnosis field to Diagnosis entity
+    * Added therapeutic_agent, treatment_anatomic_site, treatment_effect, treatment_end_reason, number_of_cycles to Treatment entity
+    * Added data_modality, imaging_modality, dbgap_accession_number to File entities
+    * Renamed associated_project, primary_disease_type, and primary_disease_site to member_of_research_project, primary_diagnosis_condition, and primary_diagnosis_site respectively in the ResearchSubject entity.
+* Updated GDC to data version 31.0 from data version 30.0
+* Updated PDC to data version 2.3 from data version 2.1
 
-## R2 ETL Process Overview
+## R2.1 ETL Process Overview
 
 Each DC (GDC, PDC, and IDC) is extracted and transformed individually. GDC and PDC data are merged together prior to loading, whereas IDC is loaded individually. In BigQuery, there are two separate tables. One for GDC and PDC merged, the second is IDC by itself. These two tables are then merged in a view, and the CDA API typically queries from the resulting view. An overview of this process can be seen in Figure 1 and will be described in more detail below.
 
@@ -484,55 +486,33 @@ For Release 2, the IDC extraction and transformation process are executed using 
 
 ```
 CREATE TEMP FUNCTION idc_species_mapping(x STRING) 
-
-RETURNS STRING AS 
-
-(CASE x WHEN 'Human' THEN 'Homo sapiens' WHEN 'Canine' THEN 'Canis familiaris' 
-
-WHEN 'Mouse' THEN 'Mus musculus' ELSE ''END); 
-
-CREATE TEMP FUNCTION idc_substr(x STRING) 
-
-RETURNS STRING AS (SUBSTR(x, 15));  
-
+    RETURNS STRING AS (CASE x WHEN 'Human' THEN 'Homo sapiens' WHEN 'Canine' THEN 'Canis familiaris' WHEN 'Mouse' THEN 'Mus musculus' ELSE ''END); 
+CREATE TEMP FUNCTION idc_substr(x STRING) RETURNS STRING AS (SUBSTR(x, 15));  
 SELECT PatientID AS id, 
-
 [STRUCT('IDC' AS system, PatientID AS value)] AS identifier, 
-
-STRING(NULL) AS sex, 
-
-STRING(NULL) AS race, 
-
-STRING(NULL) AS ethnicity, 
-
-Null AS days_to_birth, 
-
 idc_species_mapping(tcia_species) AS species, 
-
+STRING(NULL) AS sex, 
+STRING(NULL) AS race, 
+STRING(NULL) AS ethnicity, 
+Null AS days_to_birth, 
 [collection_id] AS subject_associated_project, 
-
+STRING(NULL) AS vital_status, 
+Null AS age_at_death, 
+STRING(NULL) AS cause_of_death, 
 ARRAY_AGG(STRUCT(crdc_instance_uuid AS id, 
-
-[STRUCT('IDC' AS system, crdc_instance_uuid AS value)] AS identifier,
-
-idc_substr(gcs_url) AS label, 
-
-'Imaging' AS data_category, 
-
-Modality AS data_type, 
-
-'DICOM' AS file_format, 
-
-collection_id AS associated_project, 
-
-gcs_url AS drs_uri, 
-
-Null AS byte_size, 
-
-STRING(NULL) AS checksum) ) as File 
-
-FROM `canceridc-data.idc_v4.dicom_pivot_v4` 
-
+    [STRUCT('IDC' AS system, crdc_instance_uuid AS value)] AS identifier, 
+    idc_substr(gcs_url) AS label, 
+    'Imaging' AS data_category, 
+    STRING(NULL) AS data_type, 
+    'DICOM' AS file_format, 
+    collection_id AS associated_project, 
+    gcs_url AS drs_uri, 
+    Null AS byte_size, 
+    STRING(NULL) AS checksum, 
+    'Imaging' AS data_modality, 
+    Modality AS imaging_modality, 
+    STRING(NULL) AS dbgap_accession_number)) as File 
+FROM `canceridc-data.idc_v3.dicom_pivot_v3` 
 GROUP by id, species, collection_id
 ```
 
@@ -553,42 +533,27 @@ This statement selects which table from IDC to query from, as well as how to agg
 The query used to merge the GDC/PDC and IDC tables on BigQuery is shown below.
 ```
 SELECT COALESCE(t1.id, t2.id) as id,
-
 ARRAY_CONCAT(
-
-    t1.identifier,
-
-    t2.identifier
-
+    IFNULL(t1.identifier,[]),
+    IFNULL(t2.identifier,[])
 ) as identifier,
-
+t1.species,
 t1.sex,
-
 t1.race,
-
 t1.ethnicity,
-
 t1.days_to_birth,
-
 ARRAY_CONCAT(
-
-    t1.subject_associated_project,
-
-    t2.subject_associated_project
-
+    IFNULL(t1.subject_associated_project,[]),
+    IFNULL(t2.subject_associated_project, [])
 ) as subject_associated_project,
-
+t1.vital_status,
+t1.age_at_death,
+t1.cause_of_death,
 ARRAY_CONCAT(
-
     IFNULL(t1.File, []),
-
     IFNULL(t2.File, [])
-
     ) as File,
-
 t1.ResearchSubject
-
 FROM `gdc-bq-sample.integration.gdc_pdc` t1
-
 FULL OUTER JOIN `gdc-bq-sample.integration.idc_v4` t2 ON t1.id = t2.id
 ```
