@@ -8,7 +8,7 @@ Last updated: March 22nd, 2022
 
 ![FigIntro](./ReleaseNotesFigs/CancerDataAggregator_PMD_0.png)
 
-The Release 3.0 of CDA searches across data from the Genomics Data Commons (GDC), the Proteomics Data Commons (PDC), and the Imaging Data Commons (IDC) to aggregate and return data to users via a single application programming interface (API). CDA leverages the work and data model that is concurrently being developed by the [Center for Cancer Data Harmonization](https://datascience.cancer.gov/data-commons/center-cancer-data-harmonization-ccdh) (CCDH). CCDH will provide a single data model that harmonizes syntax and semantics across the CRDC systems and services. 
+The Release 3.0 of CDA searches across data from the Genomics Data Commons (GDC), the Proteomics Data Commons (PDC), and the Imaging Data Commons (IDC) to aggregate and return data to users via a single application programming interface (API). CDA leverages the work and data model that is concurrently being developed by the [Center for Cancer Data Harmonization](https://datascience.cancer.gov/data-commons/center-cancer-data-harmonization-ccdh) (CCDH). CCDH will provide a single data model that harmonizes syntax and semantics across the CRDC systems and services.
 
 The CCDH data model promises to be a specimen-centric model whereas current CRDC nodes tend to use a case-centric approach.  The diagrams below depict the shift from the respective GDC and PDC entity models (provided by CCDH - Figure 1) towards a specimen-centric model (Figure 2).
 
@@ -47,13 +47,14 @@ For details on the extraction, transformation, load (ETL) process, please see [C
 
 ## Enhanced query functionality
 
-* Added Docker for enabling quickstart
-* Enhanced Q functionality to more mimic natural language
-* Support for long queries
-* Added asynchronous hooks, ability to do searches in parallel
-* Can write raw SQL queries
-* Can check status of BigQuery to see if the source data table is up in Q
-* Unique values and columns return faster than in Release 1
+* Added support for IN and LIKE SQL statements
+* The Subjects query has been simplified to not return file information, instead the new files Q method can be used for files
+* Counts function added to Q that gives total counts for each Data Commons given a query
+* Filter flag added to Q's run method which allows horizontal filtering of results
+* Verbose flag added to Q's run method to hide/show Q actions when running a query
+* Query's on text fields are now case insensitive
+* Added to_dataframe to Q's Result object that converts the JSON structure to a pandas dataframe
+* Added paginator to Q's Result object that allows for pagination through result pages. This also has a flag for paginating as a dataframe.
 
 
 ## Metadata Changes
@@ -63,7 +64,7 @@ For details on the extraction, transformation, load (ETL) process, please see [C
 * Summary
     * Previous table format now called Subjects endpoint
         * Replaced all File entities with Files - a list of file ids associated with the entity that the list is located in. e.g
-            * File -> Files 
+            * File -> Files
             * ResearchSubject.File -> ResearchSubject.Files
             * ResearchSubject.Specimen.File -> ResearchSubject.Specimen.Files
     * Files endpoint added:
@@ -77,17 +78,12 @@ For details on the extraction, transformation, load (ETL) process, please see [C
 
 ## Bug fixes
 
-* Fixed problem of unnested items would appear at the top level in the JSON response, resulting in duplication of elements
-* Fixed cda-service overwrites query columns with same name
-* Added support for the API queries to asynchronous calls.
-* Added a unique-values API endpoint for returning distinct values in the cda table
-* There is a new status endpoint which will verify that the cda_mvp tables are available.   Please let the dev team know if there is additional info that would be useful from this endpoint in the future.  "total table rows, size of schemas etc"
-* Support the ability to query development tables being used for integrating the IDC data with the existing PDC and GDC data. If your jupyter notebooks fail to execute, you will likely have to reload the cda-python into your python virtual environment.
+* Fixed issue where queries on array columns that were not arrays of json objects (i.e. subject_associated_project) would fail
+* Duplicate files should no longer be returned
 
 
 ## Known bugs and issues
 
-* `unique_terms` are not sorted when they return
 * tumor stages are not harmonized, there are redundant terms (complicates query)
 * Days_to_birth should be reformatted (currently negative) or have an example query
 * Docker jupyter notebook does not work if a notebook is already open in port 8888
@@ -95,4 +91,4 @@ For details on the extraction, transformation, load (ETL) process, please see [C
 <!-- Footnotes themselves at the bottom. -->
 
 [^1]:
-     Information pulled from the PDC API may contain embargoed data. 
+     Information pulled from the PDC API may contain embargoed data.
