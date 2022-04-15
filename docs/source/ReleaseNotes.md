@@ -78,7 +78,7 @@ For details on the extraction, transformation, load (ETL) process, please see [C
 
 ## Bug fixes
 
-* Fixed issue where queries on array columns that were not arrays of json objects (i.e. subject_associated_project) would fail
+* Fixed issue where queries on list columns that were not lists of json objects (i.e. subject_associated_project) would fail
 * Duplicate files should no longer be returned
 
 
